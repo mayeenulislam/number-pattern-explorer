@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Pattern Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            min-height: 100vh;
+        }
+        .title-font { font-family: 'Fredoka One', cursive; }
+        .card {
+            transition: transform 0.2s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .card:hover { transform: translateY(-5px); }
+        .number-box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .correct-anim { animation: celebrate 0.5s ease-out; }
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="title-font text-4xl text-indigo-600 mb-2">Number Pattern Explorer 🕵️‍♂️</h1>
+            <p class="text-gray-600 text-lg">চলো নম্বর প্যাটার্ন খুঁজে বের করি!</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="bg-white rounded-full h-4 mb-6 shadow-inner relative overflow-hidden">
+            <div id="progressBar" class="bg-green-400 h-full transition-all duration-500" style="width: 2%"></div>
+        </div>
+
+        <!-- Game Container -->
+        <div id="gameCard" class="bg-white rounded-3xl p-8 card text-center">
+            <div class="flex justify-between items-center mb-6">
+                <span class="bg-indigo-100 text-indigo-700 px-4 py-1 rounded-full font-bold">লেভেল: <span id="levelDisplay">1</span>/50</span>
+                <span class="bg-yellow-100 text-yellow-700 px-4 py-1 rounded-full font-bold">স্কোর: <span id="scoreDisplay">0</span></span>
+            </div>
+
+            <div id="questionContainer" class="flex flex-wrap justify-center gap-4 mb-8">
+                <!-- Numbers will appear here -->
+            </div>
+
+            <div id="inputArea" class="space-y-4">
+                <div id="inputsContainer" class="flex justify-center gap-4">
+                    <!-- Input boxes for [?] -->
+                </div>
+                <button onclick="checkAnswer()" id="checkBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-10 rounded-2xl shadow-lg transition duration-200">উত্তর যাচাই করো</button>
+            </div>
+
+            <!-- Explanation Area (Hidden by default) -->
+            <div id="explanationArea" class="hidden mt-8 p-6 bg-blue-50 border-l-8 border-blue-400 rounded-lg text-left animate-fade-in">
+                <h3 class="text-blue-800 font-bold mb-2 text-xl">Great Job! 🌟</h3>
+                <p id="explanationText" class="text-blue-700 text-lg italic"></p>
+                <button onclick="nextLevel()" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-xl shadow-md">পরের লেভেল</button>
+            </div>
+            
+            <div id="errorMessage" class="hidden mt-4 text-red-500 font-bold">আবার চেষ্টা করো! ভালো করে প্যাটার্নটি দেখো।</div>
+        </div>
+    </div>
+
+    <script>
+        let currentLevel = 1;
+        let score = 0;
+        let currentPattern = {};
+        
+        // Generate Challenges (50 Levels)
+        const challenges = [];
+        
+        function generateChallenges() {
+            for (let i = 1; i <= 50; i++) {
+                let pattern = [];
+                let logicText = "";
+                let missingCount = i > 30 ? 3 : (i > 15 ? 2 : 1);
+                
+                if (i <= 10) { // Add patterns (+n)
+                    let start = Math.floor(Math.random() * 5);
+                    let diff = Math.floor(Math.random() * 5) + 2;
+                    for (let j = 0; j < 5; j++) pattern.push(start + (j * diff));
+                    logicText = `Each number is increasing by adding ${diff}. (আগের সংখ্যার সাথে ${diff} যোগ করা হয়েছে)`;
+                } 
+                else if (i <= 20) { // Fibonacci-style or repetitive patterns
+                    if (i % 2 === 0) {
+                        let start = Math.floor(Math.random() * 10);
+                        let inc = Math.floor(Math.random() * 5) + 2;
+                        pattern = [start, start + inc, start + inc, start + (inc * 2), start + (inc * 3)];
+                        logicText = `The next number is the sum of the previous two numbers! (আগের দুটি সংখ্যার যোগফলই হলো পরের সংখ্যা)`;
+                    } else {
+                        let base = Math.floor(Math.random() * 10);
+                        let gap = Math.floor(Math.random() * 4) + 1;
+                        pattern = [base, base + gap, base, base + gap, base];
+                        logicText = `This is a repeating pattern of two numbers. (এখানে দুটি সংখ্যা বারবার ফিরে আসছে)`;
+                    }
+                }
+                else if (i <= 35) { // Multiplication or Minus
+                    let start = 40;
+                    let diff = Math.floor(Math.random() * 5) + 3;
+                    for (let j = 0; j < 5; j++) pattern.push(start - (j * diff));
+                    logicText = `The numbers are decreasing by subtracting ${diff}. (আগের সংখ্যা থেকে ${diff} বিয়োগ করা হয়েছে)`;
+                }
+                else { // Complex patterns
+                    let start = 2;
+                    let factor = 2;
+                    for (let j = 0; j < 5; j++) pattern.push(start * Math.pow(factor, j));
+                    logicText = `Each number is being multiplied by ${factor}. (আগের সংখ্যাকে ${factor} দিয়ে গুণ করা হয়েছে)`;
+                }
+
+                // Decide missing indices (always at the end for easy guessing, then moving inwards)
+                let missingIndices = [];
+                for(let k = 0; k < missingCount; k++) {
+                    missingIndices.push(4 - k);
+                }
+
+                challenges.push({
+                    fullPattern: [...pattern],
+                    displayPattern: pattern.map((n, idx) => missingIndices.includes(idx) ? '?' : n),
+                    missingValues: missingIndices.map(idx => pattern[idx]).reverse(),
+                    logic: logicText
+                });
+            }
+        }
+
+        function loadLevel() {
+            const data = challenges[currentLevel - 1];
+            currentPattern = data;
+            
+            const container = document.getElementById('questionContainer');
+            container.innerHTML = '';
+            
+            data.displayPattern.forEach((item, idx) => {
+                const box = document.createElement('div');
+                box.className = `number-box ${item === '?' ? 'bg-indigo-100 text-indigo-400 border-2 border-dashed border-indigo-300' : 'bg-indigo-600 text-white'}`;
+                box.innerText = item;
+                container.appendChild(box);
+            });
+
+            const inputContainer = document.getElementById('inputsContainer');
+            inputContainer.innerHTML = '';
+            data.missingValues.forEach((val, idx) => {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.placeholder = '?';
+                input.className = "w-20 p-3 text-center border-2 border-indigo-200 rounded-xl text-xl focus:border-indigo-500 outline-none";
+                inputContainer.appendChild(input);
+            });
+
+            document.getElementById('levelDisplay').innerText = currentLevel;
+            document.getElementById('explanationArea').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('inputArea').classList.remove('hidden');
+            document.getElementById('progressBar').style.width = (currentLevel / 50 * 100) + '%';
+        }
+
+        function checkAnswer() {
+            const inputs = document.querySelectorAll('#inputsContainer input');
+            let userAnswers = Array.from(inputs).map(i => parseInt(i.value));
+            
+            // Check if all answers match (missingValues are stored in correct order for input)
+            let isCorrect = true;
+            currentPattern.missingValues.forEach((val, idx) => {
+                if (userAnswers[idx] !== val) isCorrect = false;
+            });
+
+            if (isCorrect) {
+                score += 10;
+                document.getElementById('scoreDisplay').innerText = score;
+                document.getElementById('explanationText').innerText = currentPattern.logic;
+                document.getElementById('explanationArea').classList.remove('hidden');
+                document.getElementById('inputArea').classList.add('hidden');
+                document.getElementById('gameCard').classList.add('correct-anim');
+                setTimeout(() => document.getElementById('gameCard').classList.remove('correct-anim'), 500);
+            } else {
+                const error = document.getElementById('errorMessage');
+                error.classList.remove('hidden');
+                setTimeout(() => error.classList.add('hidden'), 2000);
+            }
+        }
+
+        function nextLevel() {
+            if (currentLevel < 50) {
+                currentLevel++;
+                loadLevel();
+            } else {
+                alert("অসাধারণ! তুমি সব লেভেল শেষ করেছ। তুমি এখন নম্বর প্যাটার্ন মাস্টার!");
+                currentLevel = 1;
+                score = 0;
+                loadLevel();
+            }
+        }
+
+        // Initialize
+        generateChallenges();
+        loadLevel();
+    </script>
+</body>
+</html>
